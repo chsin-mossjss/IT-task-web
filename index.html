@@ -417,6 +417,24 @@
         document.getElementById('proj_members_checkboxes').innerHTML = checkboxHtml;
         updateProjectMembers();
         updateTaskOwners();
+        document.querySelectorAll('select[multiple]').forEach(select => {
+            select.onmousedown = function(e) {
+                if (e.target.tagName === 'OPTION') {
+                    e.preventDefault(); 
+                    
+                    // 點擊 "取消/清除選擇" 時的特殊處理
+                    if (e.target.value === "clear") {
+                        Array.from(this.options).forEach(opt => opt.selected = false);
+                        e.target.selected = true;
+                    } else {
+                        // 點擊一般選項時，取消選取 "clear" 選項
+                        this.options[0].selected = false;
+                        e.target.selected = !e.target.selected;
+                    }
+                    
+                    // 手動觸發篩選器更新
+                    const event = new Event('change');
+                    this.dispatchEvent(event);
     }
 
     function updateProjectMembers() {
