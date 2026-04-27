@@ -150,10 +150,12 @@
                         <label class="form-label">任務類型</label>
                         <select id="task_type" class="form-select" onchange="toggleTaskForm()">
                             <option value="單一任務">單一任務</option>
-                            <option value="重覆任務">重覆任務</option> </select>
+                            <option value="重覆任務">重覆任務</option>
+                        </select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">循環週期 (重覆任務專用)</label> <select id="task_period" class="form-select" disabled>
+                        <label class="form-label">循環週期 (重覆任務專用)</label>
+                        <select id="task_period" class="form-select" disabled>
                             <option value="N/A">N/A</option>
                             <option value="每天">每天</option>
                             <option value="每週">每週</option>
@@ -206,6 +208,8 @@
             <div class="modal-body">
                 <input type="hidden" id="edit_old_project_name">
                 <input type="hidden" id="edit_old_task_name">
+                <input type="hidden" id="edit_task_row_idx">
+                <input type="hidden" id="edit_project_row_idx">
                 
                 <div class="mb-3">
                     <label class="form-label">所屬事項 (唯讀)</label>
@@ -337,8 +341,9 @@
                 right: 'dayGridMonth,timeGridWeek,listMonth'
             },
             eventClick: function(info) {
-                // 修改：點擊日曆事件開啟編輯視窗
-                openEditModal(info.event.extendedProps.project, info.event.extendedProps.taskName);
+                // 取得事件內埋藏的資料，傳入 Row Index 
+                const props = info.event.extendedProps;
+                openEditModal(props.project, props.taskName, props.taskRowIdx, props.projectRowIdx);
             }
         });
         calendar.render();
@@ -455,13 +460,11 @@
         return Array.from(document.querySelectorAll(`.${className}:checked`)).map(cb => cb.value).join(', ');
     }
 
-    // 取得多選選單的陣列資料
     function getMultiSelectValues(selectId) {
         const select = document.getElementById(selectId);
         const selected = Array.from(select.selectedOptions).map(opt => opt.value);
-        // 如果包含 "clear" 或是沒選半個，就當作沒篩選（回傳空陣列）
         if (selected.includes("clear") || selected.length === 0) {
-            select.value = ""; // 取消其他亮起狀態
+            select.value = ""; 
             return [];
         }
         return selected;
@@ -476,7 +479,6 @@
         };
         if (!payload.name) return alert('請填寫事項名稱！');
 
-        // 🌟 防連點與立即關閉 Modal
         const btn = document.getElementById("saveProjectBtn");
         btn.disabled = true;
         btn.innerText = "儲存中...";
@@ -517,7 +519,6 @@
         if (payload.type === '重覆任務' && !payload.end_date) return alert('重覆任務必須設定「結束日期」！');
         if (!payload.owners) return alert('請選擇負責人！');
         
-        // 🌟 防連點與立即關閉 Modal
         const btn = document.getElementById("saveTaskBtn");
         btn.disabled = true;
         btn.innerText = "儲存中...";
@@ -538,29 +539,32 @@
         }
     }
 
-    // 🌟 打開專屬編輯視窗
-    function openEditModal(projectName, taskName) {
-        // 在資料中找到這個任務
+    // 🌟 修改：接收 Row Index 並填入隱藏欄位
+    function openEditModal(projectName, taskName, taskRowIdx, projectRowIdx) {
         const task = rawData.tasks.find(t => t[0] === projectName && t[1] === taskName);
         if (!task) return;
 
-        // 填入資料
         document.getElementById('edit_old_project_name').value = projectName;
         document.getElementById('edit_old_task_name').value = taskName;
         document.getElementById('edit_project_name_display').value = projectName;
         document.getElementById('edit_task_name').value = taskName;
-        document.getElementById('edit_task_status').value = task[10]; // 狀態
+        document.getElementById('edit_task_status').value = task[10]; 
+        
+        // 將 Row Index 放入隱藏輸入框，給未來的編輯 API 加速使用
+        document.getElementById('edit_task_row_idx').value = taskRowIdx || '';
+        document.getElementById('edit_project_row_idx').value = projectRowIdx || '';
 
-        // 顯示 Modal
         bootstrap.Modal.getOrCreateInstance(document.getElementById('editTaskModal')).show();
     }
 
-    // 🌟 儲存編輯資料
+    // 🌟 修改：把 Row Index 夾帶給後端
     async function updateTask() {
         const oldProjName = document.getElementById('edit_old_project_name').value;
         const oldTaskName = document.getElementById('edit_old_task_name').value;
         const newTaskName = document.getElementById('edit_task_name').value;
         const newStatus = document.getElementById('edit_task_status').value;
+        const taskRowIdx = document.getElementById('edit_task_row_idx').value;
+        const projectRowIdx = document.getElementById('edit_project_row_idx').value;
 
         if (!newTaskName) return alert("任務名稱不可為空！");
 
@@ -570,7 +574,6 @@
         bootstrap.Modal.getOrCreateInstance(document.getElementById('editTaskModal')).hide();
 
         try {
-            // ⚠️ 提醒：後端需要新增 `/api/edit_task` 路由來處理這個請求
             const res = await fetchWithAuth(`${RENDER_URL}/api/edit_task`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -578,13 +581,14 @@
                     old_project_name: oldProjName,
                     old_task_name: oldTaskName,
                     new_task_name: newTaskName,
-                    status: newStatus
+                    status: newStatus,
+                    task_row_idx: taskRowIdx,
+                    project_row_idx: projectRowIdx
                 })
             });
             
-            // 如果後端還沒寫這個 API，會回傳 404，給個提示
             if (res.status === 404) {
-                alert("前端已送出請求，但你的後端 (Render) 尚未建立 /api/edit_task 路由！");
+                alert("前端已送出請求，但你的後端尚未建立 /api/edit_task 路由！");
             } else if (res.ok) {
                 await init();
             }
@@ -596,13 +600,14 @@
         }
     }
 
-    // 🌟 刪除任務
+    // 🌟 修改：把 Row Index 夾帶給後端
     async function deleteTask() {
         const confirmDelete = confirm("確定要刪除這筆任務嗎？此動作無法復原！");
         if (!confirmDelete) return;
 
         const oldProjName = document.getElementById('edit_old_project_name').value;
         const oldTaskName = document.getElementById('edit_old_task_name').value;
+        const taskRowIdx = document.getElementById('edit_task_row_idx').value;
 
         const btn = document.getElementById("deleteTaskBtn");
         btn.disabled = true;
@@ -610,18 +615,18 @@
         bootstrap.Modal.getOrCreateInstance(document.getElementById('editTaskModal')).hide();
 
         try {
-            // ⚠️ 提醒：後端需要新增 `/api/delete_task` 路由來處理這個請求
             const res = await fetchWithAuth(`${RENDER_URL}/api/delete_task`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     project_name: oldProjName,
-                    task_name: oldTaskName
+                    task_name: oldTaskName,
+                    task_row_idx: taskRowIdx
                 })
             });
 
             if (res.status === 404) {
-                alert("前端已送出請求，但你的後端 (Render) 尚未建立 /api/delete_task 路由！");
+                alert("前端已送出請求，但你的後端尚未建立 /api/delete_task 路由！");
             } else if (res.ok) {
                 await init();
             }
@@ -633,7 +638,8 @@
         }
     }
 
-    async function updateStatus(projectName, taskName, selectElement) {
+    // 🌟 修改：接收並傳送 Row Index 進行加速
+    async function updateStatus(projectName, taskName, taskRowIdx, projectRowIdx, selectElement) {
         const newStatus = selectElement.value;
         selectElement.style.opacity = '0.5';
 
@@ -641,7 +647,13 @@
             const res = await fetchWithAuth(`${RENDER_URL}/api/update_task_status`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ project_name: projectName, task_name: taskName, status: newStatus })
+                body: JSON.stringify({ 
+                    project_name: projectName, 
+                    task_name: taskName, 
+                    status: newStatus,
+                    task_row_idx: taskRowIdx,
+                    project_row_idx: projectRowIdx
+                })
             });
             if (res.ok) { await init(); } 
             else { alert('狀態更新失敗'); selectElement.style.opacity = '1'; }
@@ -659,7 +671,6 @@
     }
 
     function renderDashboard() {
-        // 使用新的多選取值邏輯
         const memberFilters = getMultiSelectValues('filterMember');
         const projectFilters = getMultiSelectValues('filterProject');
         const statusFilters = getMultiSelectValues('filterStatus'); 
@@ -675,13 +686,14 @@
                 const leader = project[1] || '';
                 const membersStr = project[2] || '';
                 
-                // 事項多選篩選
+                // 🚀 抓取專案的 Row Index
+                const projectRowIdx = project[project.length - 1];
+                
                 if (projectFilters.length > 0 && !projectFilters.includes(projectName)) return;
 
                 let isLeader = false;
                 let isMember = false;
                 
-                // 負責人多選篩選（只要專案有涵蓋任一被選成員即顯示該專案）
                 if (memberFilters.length > 0) {
                     isLeader = memberFilters.includes(leader);
                     isMember = memberFilters.some(m => membersStr.includes(m));
@@ -719,6 +731,9 @@
                         const taskStatus = task[10];
                         const taskEndDate = task[11];   
 
+                        // 🚀 抓取任務的 Row Index
+                        const taskRowIdx = task[task.length - 1];
+
                         let showTask = false;
                         if (memberFilters.length === 0) {
                             showTask = true; 
@@ -741,10 +756,11 @@
                             dateDisplay = `${taskStartDate} 至 ${taskEndDate}`;
                         }
 
+                        // 🌟 修改：onclick 跟 onchange 都加入了 taskRowIdx 和 projectRowIdx
                         projectHtml += `
                             <div class="task-item border-start border-4 border-${taskType === '單一任務' ? 'info' : 'warning'}">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <div class="flex-grow-1" style="cursor: pointer;" onclick="openEditModal('${projectName}', '${taskName}')">
+                                    <div class="flex-grow-1" style="cursor: pointer;" onclick="openEditModal('${projectName}', '${taskName}', ${taskRowIdx}, ${projectRowIdx})">
                                         <h5 class="mb-1 text-dark">${taskName}</h5>
                                         <p class="text-muted small mb-0">
                                             👤 負責: ${taskOwners || '未定'} | 📅 ${dateDisplay} ${taskTime ? '@ ' + taskTime : ''}
@@ -753,7 +769,7 @@
                                     </div>
                                     <div onclick="event.stopPropagation()">
                                         <select class="form-select form-select-sm status-select ${colorClass}" 
-                                                onchange="updateStatus('${projectName}', '${taskName}', this)">
+                                                onchange="updateStatus('${projectName}', '${taskName}', ${taskRowIdx}, ${projectRowIdx}, this)">
                                             <option value="未開始" ${taskStatus === '未開始' ? 'selected' : ''}>未開始</option>
                                             <option value="進行中" ${taskStatus === '進行中' ? 'selected' : ''}>進行中</option>
                                             <option value="已完成" ${taskStatus === '已完成' ? 'selected' : ''}>已完成</option>
@@ -766,8 +782,15 @@
                         if (taskStatus === '進行中') calColor = '#0d6efd'; 
                         if (taskStatus === '已完成') calColor = '#198754'; 
 
-                        // 存放無表情符號的乾淨名稱，方便日曆回傳呼叫 Edit
-                        let cleanProps = { project: projectName, taskName: taskName, owners: taskOwners, status: taskStatus };
+                        // 🌟 修改：夾帶給日曆以備編輯之用
+                        let cleanProps = { 
+                            project: projectName, 
+                            taskName: taskName, 
+                            owners: taskOwners, 
+                            status: taskStatus,
+                            taskRowIdx: taskRowIdx,
+                            projectRowIdx: projectRowIdx
+                        };
 
                         if (taskType === '重覆任務' && taskStartDate && taskEndDate) {
                             let currDate = new Date(taskStartDate);
