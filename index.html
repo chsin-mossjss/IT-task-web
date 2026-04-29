@@ -229,9 +229,10 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 
 <script>
-    const RENDER_URL = 'https://it-task.onrender.com'; 
+    const RENDER_URL = 'https://it-task.onrender.com'; // 請確認這是否為您的後端網址
     let googleToken = ""; 
     let rawData = { projects: [], tasks: [], members: [] };
     let calendar;
@@ -276,7 +277,7 @@
             if (res.status === 'success') {
                 rawData = res;
                 setupFormOptions();
-                initCalendar();
+                if (!calendar) initCalendar();
                 renderDashboard();
             }
         } catch (err) {
@@ -284,7 +285,7 @@
         }
     }
 
-    // --- 表單選單優化 (多選魔法) ---
+    // --- 表單選單 ---
     function setupFormOptions() {
         const filterProj = document.getElementById('filterProject');
         const filterMem = document.getElementById('filterMember');
@@ -320,7 +321,7 @@
         }
         document.getElementById('proj_members_checkboxes').innerHTML = checkboxHtml;
 
-        // 免按 Ctrl 邏輯
+        // 免按 Ctrl 多選邏輯
         document.querySelectorAll('select[multiple]').forEach(select => {
             select.onmousedown = function(e) {
                 if (e.target.tagName === 'OPTION') {
@@ -344,11 +345,15 @@
         updateTaskOwners();
     }
 
+    // 解決日曆切換時渲染異常的問題
     function toggleView() {
         const isCalendar = document.getElementById('viewCalendar').checked;
         document.getElementById('listView').style.display = isCalendar ? 'none' : 'block';
         document.getElementById('calendarView').style.display = isCalendar ? 'block' : 'none';
-        if (isCalendar && calendar) calendar.render();
+        
+        if (isCalendar && calendar) {
+            setTimeout(() => { calendar.render(); }, 100); 
+        }
     }
 
     function toggleTaskForm() {
@@ -456,7 +461,7 @@
         document.getElementById('edit_old_task_name').value = taskName;
         document.getElementById('edit_project_name_display').value = projName;
         document.getElementById('edit_task_name').value = taskName;
-        document.getElementById('edit_task_status').value = task[10];
+        document.getElementById('edit_task_status').value = task[10]; // 狀態在索引10
         document.getElementById('edit_task_row_idx').value = rowIdx;
         bootstrap.Modal.getOrCreateInstance(document.getElementById('editTaskModal')).show();
     }
@@ -508,7 +513,7 @@
         } catch(e) { console.error(e); el.style.opacity = '1'; }
     }
 
-    // --- 渲染畫面 (完整保留您的日曆迴圈) ---
+    // --- 渲染畫面 ---
     function renderDashboard() {
         const memberFilters = getSelectedValues('filterMember');
         const projectFilters = getSelectedValues('filterProject');
@@ -539,15 +544,16 @@
                 
                 if (projectTasks.length > 0) {
                     projectTasks.forEach(t => {
+                        // 修正對應新版 app.py 欄位的 Index
                         const taskName = t[1];
                         const taskType = t[2];
                         const taskPeriod = t[3];
                         const taskOwners = t[5];
                         const taskStartDate = t[7];
-                        const taskEndDate = t[8];
-                        const taskTime = t[9];
+                        const taskTime = t[8] || '';        // 原本是 9，現在是 8
                         const taskStatus = t[10];
-                        const rowIdx = t[t.length - 1]; // 後端傳來的最後一個元素是列數
+                        const taskEndDate = t[11] || '';      // 原本是 8，現在是 11
+                        const rowIdx = t[t.length - 1]; 
                         
                         const matchMember = memberFilters.length === 0 || memberFilters.some(m => taskOwners.includes(m));
                         const matchStatus = statusFilters.length === 0 || statusFilters.includes(taskStatus);
@@ -576,7 +582,7 @@
                             </div>
                         `;
 
-                        // 您的原版：完整日曆事件渲染邏輯 (處理重覆任務)
+                        // 日曆事件渲染
                         const calColor = taskStatus === '已完成' ? '#198754' : (taskStatus === '進行中' ? '#0d6efd' : '#6c757d');
                         const cleanProps = { proj: projName, task: taskName, row: rowIdx };
 
@@ -585,7 +591,6 @@
                             let endD = new Date(taskEndDate);
                             let safeguard = 0;
                             while (currDate <= endD && safeguard < 1000) {
-                                // 避免時區問題，使用本地端字串組合
                                 let year = currDate.getFullYear();
                                 let month = String(currDate.getMonth() + 1).padStart(2, '0');
                                 let day = String(currDate.getDate()).padStart(2, '0');
@@ -599,15 +604,10 @@
                                     extendedProps: cleanProps
                                 });
 
-                                if (taskPeriod === '每天') {
-                                    currDate.setDate(currDate.getDate() + 1);
-                                } else if (taskPeriod === '每週') {
-                                    currDate.setDate(currDate.getDate() + 7);
-                                } else if (taskPeriod === '每月') {
-                                    currDate.setMonth(currDate.getMonth() + 1);
-                                } else {
-                                    break; 
-                                }
+                                if (taskPeriod === '每天') { currDate.setDate(currDate.getDate() + 1); } 
+                                else if (taskPeriod === '每週') { currDate.setDate(currDate.getDate() + 7); } 
+                                else if (taskPeriod === '每月') { currDate.setMonth(currDate.getMonth() + 1); } 
+                                else { break; }
                                 safeguard++;
                             }
                         } else if (taskStartDate) {
