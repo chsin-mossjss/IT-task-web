@@ -94,7 +94,7 @@
                     <div class="col-12"><label class="form-label">描述</label><textarea id="proj_desc" class="form-control" rows="2"></textarea></div>
                 </form>
             </div>
-            <div class="modal-footer"><button type="button" class="btn btn-primary" onclick="submitProject()">儲存事項</button></div>
+            <div class="modal-footer"><button type="button" class="btn btn-primary" onclick="submitProject(this)">儲存事項</button></div>
         </div>
     </div>
 </div>
@@ -114,8 +114,8 @@
                 </form>
             </div>
             <div class="modal-footer d-flex justify-content-between">
-                <button type="button" class="btn btn-danger" onclick="deleteProject()">刪除事項</button>
-                <button type="button" class="btn btn-primary" onclick="updateProject()">儲存修改</button>
+                <button type="button" class="btn btn-danger" onclick="deleteProject(this)">刪除事項</button>
+                <button type="button" class="btn btn-primary" onclick="updateProject(this)">儲存修改</button>
             </div>
         </div>
     </div>
@@ -150,7 +150,7 @@
                     <div class="col-md-4"><label class="form-label">特定時間</label><input type="time" id="task_time" class="form-control"></div>
                 </form>
             </div>
-            <div class="modal-footer"><button type="button" class="btn btn-primary" onclick="submitTask()">儲存任務</button></div>
+            <div class="modal-footer"><button type="button" class="btn btn-primary" onclick="submitTask(this)">儲存任務</button></div>
         </div>
     </div>
 </div>
@@ -191,8 +191,8 @@
                 </form>
             </div>
             <div class="modal-footer d-flex justify-content-between">
-                <button type="button" class="btn btn-danger" onclick="deleteTask()">刪除任務</button>
-                <button type="button" class="btn btn-primary" onclick="updateTask()">儲存修改</button>
+                <button type="button" class="btn btn-danger" onclick="deleteTask(this)">刪除任務</button>
+                <button type="button" class="btn btn-primary" onclick="updateTask(this)">儲存修改</button>
             </div>
         </div>
     </div>
@@ -278,7 +278,6 @@
         document.getElementById('proj_members_checkboxes').innerHTML = checkboxHtml;
         document.getElementById('edit_proj_members_checkboxes').innerHTML = editCheckboxHtml;
 
-        // 免按 Ctrl 多選邏輯
         document.querySelectorAll('select[multiple]').forEach(select => {
             select.onmousedown = function(e) {
                 if (e.target.tagName === 'OPTION') {
@@ -305,7 +304,6 @@
         if (isCalendar && calendar) setTimeout(() => { calendar.render(); }, 100); 
     }
 
-    // --- 共用互動邏輯 ---
     function toggleTaskForm(typeId, natureId, periodId, endDateDivId, startDateLabelId, singleOwnerDivId, multiOwnerDivId) {
         const type = document.getElementById(typeId).value;
         const nature = document.getElementById(natureId).value;
@@ -351,16 +349,23 @@
     }
 
     // --- API 呼叫：事項 (Project) ---
-    async function submitProject() {
+    async function submitProject(btn) {
         const payload = {
             name: document.getElementById('proj_name').value, leader: document.getElementById('proj_leader').value,
             members: getCheckedValues('member-checkbox'), desc: document.getElementById('proj_desc').value
         };
         if (!payload.name) return alert('請填寫名稱');
+
+        // 🌟 防連點機制
+        const origText = btn.innerText;
+        btn.disabled = true; btn.innerText = "處理中...";
+
         try {
             await fetchWithAuth(`${RENDER_URL}/api/add_project`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+            document.getElementById('proj_name').value = ''; // 成功後清空欄位
+            document.getElementById('proj_desc').value = '';
             bootstrap.Modal.getInstance(document.getElementById('addProjectModal')).hide(); init();
-        } catch(e) { console.error(e); }
+        } catch(e) { console.error(e); } finally { btn.disabled = false; btn.innerText = origText; }
     }
 
     function openEditProjectModal(projName, rowIdx) {
@@ -376,7 +381,7 @@
         bootstrap.Modal.getOrCreateInstance(document.getElementById('editProjectModal')).show();
     }
 
-    async function updateProject() {
+    async function updateProject(btn) {
         const payload = {
             project_row_idx: document.getElementById('edit_proj_row_idx').value,
             old_name: document.getElementById('edit_proj_old_name').value,
@@ -385,25 +390,32 @@
             members: getCheckedValues('edit-member-checkbox'),
             desc: document.getElementById('edit_proj_desc').value
         };
+        
+        const origText = btn.innerText;
+        btn.disabled = true; btn.innerText = "處理中...";
+        
         try {
             await fetchWithAuth(`${RENDER_URL}/api/edit_project`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
             bootstrap.Modal.getInstance(document.getElementById('editProjectModal')).hide(); init();
-        } catch(e) { console.error(e); }
+        } catch(e) { console.error(e); } finally { btn.disabled = false; btn.innerText = origText; }
     }
 
-    async function deleteProject() {
+    async function deleteProject(btn) {
         if (!confirm("警告：這將刪除整個事項。確定要刪除嗎？")) return;
+        const origText = btn.innerText;
+        btn.disabled = true; btn.innerText = "處理中...";
+        
         try {
             await fetchWithAuth(`${RENDER_URL}/api/delete_project`, { 
                 method: 'POST', headers: {'Content-Type':'application/json'}, 
                 body: JSON.stringify({ project_row_idx: document.getElementById('edit_proj_row_idx').value }) 
             });
             bootstrap.Modal.getInstance(document.getElementById('editProjectModal')).hide(); init();
-        } catch(e) { console.error(e); }
+        } catch(e) { console.error(e); } finally { btn.disabled = false; btn.innerText = origText; }
     }
 
     // --- API 呼叫：任務 (Task) ---
-    async function submitTask() {
+    async function submitTask(btn) {
         const payload = {
             project_name: document.getElementById('task_project_name').value, task_name: document.getElementById('task_name').value,
             type: document.getElementById('task_type').value, period: document.getElementById('task_period').value,
@@ -412,10 +424,15 @@
             start_date: document.getElementById('task_start_date').value, end_date: document.getElementById('task_end_date').value, time: document.getElementById('task_time').value
         };
         if (!payload.task_name || !payload.start_date || !payload.owners) return alert('請完整填寫必填欄位');
+
+        const origText = btn.innerText;
+        btn.disabled = true; btn.innerText = "處理中...";
+        
         try {
             await fetchWithAuth(`${RENDER_URL}/api/add_task`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+            document.getElementById('task_name').value = '';
             bootstrap.Modal.getInstance(document.getElementById('addTaskModal')).hide(); init();
-        } catch(e) { console.error(e); }
+        } catch(e) { console.error(e); } finally { btn.disabled = false; btn.innerText = origText; }
     }
 
     function openEditModal(projName, taskName, rowIdx) {
@@ -446,7 +463,7 @@
         bootstrap.Modal.getOrCreateInstance(document.getElementById('editTaskModal')).show();
     }
 
-    async function updateTask() {
+    async function updateTask(btn) {
         const payload = {
             task_row_idx: document.getElementById('edit_task_row_idx').value,
             old_project_name: document.getElementById('edit_old_project_name').value,
@@ -463,21 +480,28 @@
             end_date: document.getElementById('edit_task_end_date').value,
             remarks: document.getElementById('edit_task_remarks').value
         };
+
+        const origText = btn.innerText;
+        btn.disabled = true; btn.innerText = "處理中...";
+
         try {
             await fetchWithAuth(`${RENDER_URL}/api/edit_task`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
             bootstrap.Modal.getInstance(document.getElementById('editTaskModal')).hide(); init();
-        } catch(e) { console.error(e); }
+        } catch(e) { console.error(e); } finally { btn.disabled = false; btn.innerText = origText; }
     }
 
-    async function deleteTask() {
+    async function deleteTask(btn) {
         if (!confirm("確定刪除此任務？")) return;
+        const origText = btn.innerText;
+        btn.disabled = true; btn.innerText = "處理中...";
+
         try {
             await fetchWithAuth(`${RENDER_URL}/api/delete_task`, { 
                 method: 'POST', headers: {'Content-Type':'application/json'}, 
                 body: JSON.stringify({ project_name: document.getElementById('edit_old_project_name').value, task_row_idx: document.getElementById('edit_task_row_idx').value }) 
             });
             bootstrap.Modal.getInstance(document.getElementById('editTaskModal')).hide(); init();
-        } catch(e) { console.error(e); }
+        } catch(e) { console.error(e); } finally { btn.disabled = false; btn.innerText = origText; }
     }
 
     async function updateStatus(proj, rowIdx, el) {
@@ -505,7 +529,6 @@
             const projStatus = p[3] || '未開始';
             const projBadge = projStatus === '已完成' ? 'bg-success' : (projStatus === '進行中' ? 'bg-primary' : 'bg-secondary');
 
-            // 🌟 判斷是否為「組長」或「Admin」，來決定是否顯示編輯事項按鈕
             const isLeaderOrAdmin = rawData.user.role === 'Admin' || p[1] === rawData.user.name;
             const editBtnHtml = isLeaderOrAdmin ? `<button class="btn btn-sm btn-outline-light ms-2" onclick="openEditProjectModal('${projName}', ${p[p.length-1]})">⚙️ 編輯事項</button>` : '';
 
@@ -545,7 +568,6 @@
                         </div>
                     </div>`;
 
-                // 日曆渲染...
                 const calColor = t[10] === '已完成' ? '#198754' : (t[10] === '進行中' ? '#0d6efd' : '#6c757d');
                 if (t[2] === '重覆任務' && t[3] !== 'N/A' && t[11] && t[7]) {
                     let cDate = new Date(t[7]); let eDate = new Date(t[11]); let sf = 0;
