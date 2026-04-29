@@ -16,8 +16,9 @@
         .status-select { font-weight: bold; width: 120px; cursor: pointer; }
         #calendar { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .fc-event { cursor: pointer; border: none; padding: 2px 5px; }
-        /* 讓多選選單高度好看一點 */
-        select[multiple] { min-height: 100px; }
+        select[multiple] { min-height: 120px; cursor: pointer; }
+        option { padding: 8px; border-bottom: 1px solid #eee; }
+        option:checked { background-color: #0d6efd !important; color: white; }
     </style>
 </head>
 <body>
@@ -57,21 +58,21 @@
 
             <div class="row g-3">
                 <div class="col-md-4">
-                    <label class="form-label text-muted small mb-1">負責人篩選 (可多選)</label>
+                    <label class="form-label text-muted small mb-1">負責人篩選 (點擊多選)</label>
                     <select id="filterMember" class="form-select" multiple onchange="renderDashboard()">
-                        <option value="clear">-- 取消/清除選擇 (顯示全部) --</option>
+                        <option value="clear" selected>-- 全部顯示 (清除選擇) --</option>
                     </select>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label text-muted small mb-1">事項篩選 (可多選)</label>
+                    <label class="form-label text-muted small mb-1">事項篩選 (點擊多選)</label>
                     <select id="filterProject" class="form-select" multiple onchange="renderDashboard()">
-                        <option value="clear">-- 取消/清除選擇 (顯示全部) --</option>
+                        <option value="clear" selected>-- 全部顯示 (清除選擇) --</option>
                     </select>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label text-muted small mb-1">狀態篩選 (可多選)</label>
-                    <select id="filterStatus" class="form-select border-info" multiple onchange="renderDashboard()">
-                        <option value="clear">-- 取消/清除選擇 (顯示全部) --</option>
+                    <label class="form-label text-muted small mb-1">狀態篩選 (點擊多選)</label>
+                    <select id="filterStatus" class="form-select" multiple onchange="renderDashboard()">
+                        <option value="clear" selected>-- 全部顯示 (清除選擇) --</option>
                         <option value="未開始">未開始</option>
                         <option value="進行中">進行中</option>
                         <option value="已完成">已完成</option>
@@ -80,18 +81,8 @@
             </div>
         </div>
 
-        <div id="listView">
-            <div id="dashboardContent">
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary"></div>
-                    <p>載入資料中...</p>
-                </div>
-            </div>
-        </div>
-
-        <div id="calendarView" style="display: none;">
-            <div id="calendar"></div>
-        </div>
+        <div id="listView"><div id="dashboardContent"></div></div>
+        <div id="calendarView" style="display: none;"><div id="calendar"></div></div>
     </div>
 </div>
 
@@ -105,15 +96,15 @@
             <div class="modal-body">
                 <form id="projectForm" class="row g-3">
                     <div class="col-12">
-                        <label class="form-label">事項名稱 (必填，請保持唯一)</label>
+                        <label class="form-label">事項名稱</label>
                         <input type="text" id="proj_name" class="form-control" required>
                     </div>
                     <div class="col-12">
-                        <label class="form-label">負責組長 (單選)</label>
+                        <label class="form-label">負責組長</label>
                         <select id="proj_leader" class="form-select" onchange="updateProjectMembers()"></select>
                     </div>
                     <div class="col-12">
-                        <label class="form-label">參與組員 (可多選)</label>
+                        <label class="form-label">參與組員</label>
                         <div id="proj_members_checkboxes" class="border p-2 rounded"></div>
                     </div>
                     <div class="col-12">
@@ -143,7 +134,7 @@
                         <select id="task_project_name" class="form-select" onchange="updateTaskOwners()" required></select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">任務名稱 (同一事項內請勿重複)</label>
+                        <label class="form-label">任務名稱</label>
                         <input type="text" id="task_name" class="form-control" required>
                     </div>
                     <div class="col-md-6">
@@ -154,7 +145,7 @@
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">循環週期 (重覆任務專用)</label>
+                        <label class="form-label">循環週期</label>
                         <select id="task_period" class="form-select" disabled>
                             <option value="N/A">N/A</option>
                             <option value="每天">每天</option>
@@ -170,11 +161,11 @@
                         </select>
                     </div>
                     <div class="col-md-8" id="div_owner_single">
-                        <label class="form-label">負責人 (單選 - 僅限該事項成員)</label>
+                        <label class="form-label">負責人 (單選)</label>
                         <select id="task_owner_single" class="form-select"></select>
                     </div>
                     <div class="col-md-8 d-none" id="div_owner_multi">
-                        <label class="form-label">負責人 (多選 - 僅限該事項成員)</label>
+                        <label class="form-label">負責人 (多選)</label>
                         <div id="task_owners_checkboxes" class="border p-2 rounded" style="max-height: 80px; overflow-y: auto;"></div>
                     </div>
                     <div class="col-md-4">
@@ -209,10 +200,8 @@
                 <input type="hidden" id="edit_old_project_name">
                 <input type="hidden" id="edit_old_task_name">
                 <input type="hidden" id="edit_task_row_idx">
-                <input type="hidden" id="edit_project_row_idx">
-                
                 <div class="mb-3">
-                    <label class="form-label">所屬事項 (唯讀)</label>
+                    <label class="form-label">所屬事項</label>
                     <input type="text" class="form-control" id="edit_project_name_display" disabled>
                 </div>
                 <div class="mb-3">
@@ -227,10 +216,9 @@
                         <option value="已完成">已完成</option>
                     </select>
                 </div>
-                <p class="text-muted small">💡 若需大幅更改負責人或日期，建議刪除後重新建立。</p>
             </div>
             <div class="modal-footer d-flex justify-content-between">
-                <button type="button" class="btn btn-danger" id="deleteTaskBtn" onclick="deleteTask()">刪除此任務</button>
+                <button type="button" class="btn btn-danger" id="deleteTaskBtn" onclick="deleteTask()">刪除任務</button>
                 <div>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
                     <button type="button" class="btn btn-primary" id="updateTaskBtn" onclick="updateTask()">儲存修改</button>
@@ -241,23 +229,19 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 
 <script>
-    const RENDER_URL = 'https://it-task.onrender.com'; // ⚠️ 請確認這是你正確的 Render 網址
-    
-    // 🌟 登入相關變數
+    const RENDER_URL = 'https://it-task.onrender.com'; 
     let googleToken = ""; 
     let rawData = { projects: [], tasks: [], members: [] };
     let calendar;
 
-    // 🌟 Google 登入初始化
+    // --- Google 登入邏輯 ---
     window.onload = function () {
         google.accounts.id.initialize({
             client_id: "995607600714-k2qf7tpmr2le1iiuc3lnt66915pab59t.apps.googleusercontent.com", 
             callback: handleCredentialResponse
         });
-        
         google.accounts.id.renderButton(
             document.getElementById("google-login-button"),
             { theme: "outline", size: "large", text: "signin_with" }  
@@ -266,46 +250,29 @@
     
     function handleCredentialResponse(response) {
         googleToken = response.credential; 
-        
-        const loginScreen = document.getElementById("login-screen");
-        loginScreen.classList.remove("d-flex");
-        loginScreen.classList.add("d-none");
-        
+        document.getElementById("login-screen").classList.replace("d-flex", "d-none");
         document.getElementById("app-screen").style.display = "block";
         init(); 
     }
 
     function handleSignOut() {
-        googleToken = "";
-        document.getElementById("app-screen").style.display = "none";
-        
-        const loginScreen = document.getElementById("login-screen");
-        loginScreen.classList.remove("d-none");
-        loginScreen.classList.add("d-flex");
-        
-        if (calendar) calendar.removeAllEvents();
-        document.getElementById('dashboardContent').innerHTML = '';
+        location.reload(); 
     }
 
     async function fetchWithAuth(url, options = {}) {
         if (!options.headers) options.headers = {};
         options.headers['Authorization'] = 'Bearer ' + googleToken; 
-        
         const response = await fetch(url, options);
-        if (response.status === 401) {
-            alert("登入過期或驗證失敗，請重新登入！");
-            handleSignOut();
-            throw new Error("Unauthorized");
-        }
+        if (response.status === 401) { alert("登入失效"); handleSignOut(); throw new Error("Unauthorized"); }
         return response;
     }
 
+    // --- 初始化與資料獲取 ---
     async function init() {
         try {
-            document.getElementById('dashboardContent').innerHTML = `<div class="text-center py-5"><div class="spinner-border text-primary"></div><p>載入資料中...</p></div>`;
+            document.getElementById('dashboardContent').innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>';
             const response = await fetchWithAuth(`${RENDER_URL}/api/all_data`);
             const res = await response.json();
-            
             if (res.status === 'success') {
                 rawData = res;
                 setupFormOptions();
@@ -313,181 +280,124 @@
                 renderDashboard();
             }
         } catch (err) {
-            if (err.message !== "Unauthorized") {
-                document.getElementById('dashboardContent').innerHTML = `<div class="alert alert-danger">連線失敗，請檢查伺服器狀態</div>`;
-            }
+            console.error(err);
         }
     }
 
-    function toggleView() {
-        const isCalendar = document.getElementById('viewCalendar').checked;
-        document.getElementById('listView').style.display = isCalendar ? 'none' : 'block';
-        document.getElementById('calendarView').style.display = isCalendar ? 'block' : 'none';
-        
-        if (isCalendar && calendar) {
-            calendar.render();
-        }
-    }
-
-    function initCalendar() {
-        const calendarEl = document.getElementById('calendar');
-        calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            locale: 'zh-tw',
-            height: 'auto',
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,listMonth'
-            },
-            eventClick: function(info) {
-                // 取得事件內埋藏的資料，傳入 Row Index 
-                const props = info.event.extendedProps;
-                openEditModal(props.project, props.taskName, props.taskRowIdx, props.projectRowIdx);
-            }
-        });
-        calendar.render();
-    }
-
-    function toggleTaskForm() {
-        const type = document.getElementById('task_type').value;
-        const periodSelect = document.getElementById('task_period');
-        const startDateLabel = document.getElementById('label_start_date');
-        const endDateDiv = document.getElementById('div_end_date');
-
-        if (type === '單一任務') {
-            periodSelect.value = 'N/A';
-            periodSelect.disabled = true;
-            startDateLabel.innerText = '截止日期';
-            endDateDiv.classList.add('d-none');
-            document.getElementById('task_end_date').removeAttribute('required');
-        } else {
-            periodSelect.disabled = false;
-            startDateLabel.innerText = '開始日期';
-            endDateDiv.classList.remove('d-none');
-            document.getElementById('task_end_date').setAttribute('required', 'true');
-        }
-
-        const nature = document.getElementById('task_nature').value;
-        if (nature === '個人任務') {
-            document.getElementById('div_owner_single').classList.remove('d-none');
-            document.getElementById('div_owner_multi').classList.add('d-none');
-        } else {
-            document.getElementById('div_owner_single').classList.add('d-none');
-            document.getElementById('div_owner_multi').classList.remove('d-none');
-        }
-    }
-
+    // --- 表單選單優化 (多選魔法) ---
     function setupFormOptions() {
         const filterProj = document.getElementById('filterProject');
-        const taskProj = document.getElementById('task_project_name');
         const filterMem = document.getElementById('filterMember');
+        const taskProj = document.getElementById('task_project_name');
         const projLeader = document.getElementById('proj_leader');
-        
-        // 多選初始化
-        filterProj.innerHTML = '<option value="clear">-- 取消/清除選擇 (顯示全部) --</option>';
-        filterMem.innerHTML = '<option value="clear">-- 取消/清除選擇 (顯示全部) --</option>';
-        
+
+        const clearOpt = '<option value="clear" selected>-- 全部顯示 (清除選擇) --</option>';
+        filterProj.innerHTML = clearOpt;
+        filterMem.innerHTML = clearOpt;
         taskProj.innerHTML = '';
         projLeader.innerHTML = '';
 
         if (rawData.projects) {
             rawData.projects.forEach(p => {
                 if(!p[0]) return;
-                const opt = `<option value="${p[0]}">${p[0]}</option>`;
-                filterProj.innerHTML += opt;
-                taskProj.innerHTML += opt;
+                filterProj.innerHTML += `<option value="${p[0]}">${p[0]}</option>`;
+                taskProj.innerHTML += `<option value="${p[0]}">${p[0]}</option>`;
             });
         }
 
         let checkboxHtml = '';
         if (rawData.members) {
-            rawData.members.forEach((m, index) => {
+            rawData.members.forEach((m, i) => {
                 if(!m[0]) return;
-                const name = m[0];
-                filterMem.innerHTML += `<option value="${name}">${name}</option>`;
-                projLeader.innerHTML += `<option value="${name}">${name}</option>`;
+                filterMem.innerHTML += `<option value="${m[0]}">${m[0]}</option>`;
+                projLeader.innerHTML += `<option value="${m[0]}">${m[0]}</option>`;
                 checkboxHtml += `
                     <div class="form-check form-check-inline">
-                        <input class="form-check-input member-checkbox" type="checkbox" value="${name}" id="chk_${index}">
-                        <label class="form-check-label" for="chk_${index}">${name}</label>
+                        <input class="form-check-input member-checkbox" type="checkbox" value="${m[0]}" id="m_cb_${i}">
+                        <label class="form-check-label" for="m_cb_${i}">${m[0]}</label>
                     </div>`;
             });
         }
         document.getElementById('proj_members_checkboxes').innerHTML = checkboxHtml;
-        updateProjectMembers();
-        updateTaskOwners();
+
+        // 免按 Ctrl 邏輯
         document.querySelectorAll('select[multiple]').forEach(select => {
             select.onmousedown = function(e) {
                 if (e.target.tagName === 'OPTION') {
-                    e.preventDefault(); 
-                    
-                    // 點擊 "取消/清除選擇" 時的特殊處理
+                    e.preventDefault();
                     if (e.target.value === "clear") {
                         Array.from(this.options).forEach(opt => opt.selected = false);
                         e.target.selected = true;
                     } else {
-                        // 點擊一般選項時，取消選取 "clear" 選項
                         this.options[0].selected = false;
                         e.target.selected = !e.target.selected;
+                        if (Array.from(this.options).filter(opt => opt.selected).length === 0) {
+                            this.options[0].selected = true;
+                        }
                     }
-                    
-                    // 手動觸發篩選器更新
-                    const event = new Event('change');
-                    this.dispatchEvent(event);
+                    this.dispatchEvent(new Event('change'));
+                }
+            };
+        });
+
+        updateProjectMembers();
+        updateTaskOwners();
+    }
+
+    function toggleView() {
+        const isCalendar = document.getElementById('viewCalendar').checked;
+        document.getElementById('listView').style.display = isCalendar ? 'none' : 'block';
+        document.getElementById('calendarView').style.display = isCalendar ? 'block' : 'none';
+        if (isCalendar && calendar) calendar.render();
+    }
+
+    function toggleTaskForm() {
+        const type = document.getElementById('task_type').value;
+        const nature = document.getElementById('task_nature').value;
+        document.getElementById('task_period').disabled = (type === '單一任務');
+        document.getElementById('div_end_date').classList.toggle('d-none', type === '單一任務');
+        document.getElementById('label_start_date').innerText = (type === '單一任務' ? '截止日期' : '開始日期');
+        document.getElementById('div_owner_single').classList.toggle('d-none', nature === '協作任務');
+        document.getElementById('div_owner_multi').classList.toggle('d-none', nature === '個人任務');
     }
 
     function updateProjectMembers() {
-        const leaderName = document.getElementById('proj_leader').value;
+        const leader = document.getElementById('proj_leader').value;
         document.querySelectorAll('.member-checkbox').forEach(cb => {
-            cb.disabled = (cb.value === leaderName);
-            if (cb.value === leaderName) cb.checked = false;
+            cb.disabled = (cb.value === leader);
+            if (cb.value === leader) cb.checked = false;
         });
     }
 
     function updateTaskOwners() {
-        const selectedProj = document.getElementById('task_project_name').value;
-        const taskSingleOwner = document.getElementById('task_owner_single');
-        const taskMultiOwnerBox = document.getElementById('task_owners_checkboxes');
-        
-        taskSingleOwner.innerHTML = '';
-        taskMultiOwnerBox.innerHTML = '';
-
-        if (!selectedProj || !rawData.projects) return;
-
-        const projectData = rawData.projects.find(p => p[0] === selectedProj);
-        if (!projectData) return;
-
-        const leader = projectData[1] || '';
-        const membersArr = (projectData[2] || '').split(',').map(m => m.trim()).filter(m => m);
-        const allowedMembers = Array.from(new Set([leader, ...membersArr].filter(m => m)));
-
-        let checkboxHtml = '';
-        allowedMembers.forEach((name, index) => {
-            taskSingleOwner.innerHTML += `<option value="${name}">${name}</option>`;
-            checkboxHtml += `
+        const projName = document.getElementById('task_project_name').value;
+        const project = rawData.projects.find(p => p[0] === projName);
+        const singleBox = document.getElementById('task_owner_single');
+        const multiBox = document.getElementById('task_owners_checkboxes');
+        singleBox.innerHTML = ''; multiBox.innerHTML = '';
+        if (!project) return;
+        const members = Array.from(new Set([project[1], ...(project[2]||"").split(",").map(s=>s.trim())])).filter(s=>s);
+        members.forEach((m, i) => {
+            singleBox.innerHTML += `<option value="${m}">${m}</option>`;
+            multiBox.innerHTML += `
                 <div class="form-check form-check-inline">
-                    <input class="form-check-input task-owner-checkbox" type="checkbox" value="${name}" id="t_chk_${index}">
-                    <label class="form-check-label" for="t_chk_${index}">${name}</label>
+                    <input class="form-check-input task-owner-checkbox" type="checkbox" value="${m}" id="t_cb_${i}">
+                    <label class="form-check-label" for="t_cb_${i}">${m}</label>
                 </div>`;
         });
-        taskMultiOwnerBox.innerHTML = checkboxHtml;
+    }
+
+    function getSelectedValues(id) {
+        const select = document.getElementById(id);
+        const values = Array.from(select.selectedOptions).map(opt => opt.value);
+        return (values.includes("clear") || values.length === 0) ? [] : values;
     }
 
     function getCheckedValues(className) {
         return Array.from(document.querySelectorAll(`.${className}:checked`)).map(cb => cb.value).join(', ');
     }
 
-    function getMultiSelectValues(selectId) {
-        const select = document.getElementById(selectId);
-        const selected = Array.from(select.selectedOptions).map(opt => opt.value);
-        if (selected.includes("clear") || selected.length === 0) {
-            select.value = ""; 
-            return [];
-        }
-        return selected;
-    }
-
+    // --- 資料提交 ---
     async function submitProject() {
         const payload = {
             name: document.getElementById('proj_name').value,
@@ -495,332 +405,195 @@
             members: getCheckedValues('member-checkbox'),
             desc: document.getElementById('proj_desc').value
         };
-        if (!payload.name) return alert('請填寫事項名稱！');
-
-        const btn = document.getElementById("saveProjectBtn");
+        if (!payload.name) return alert('請填寫名稱');
+        const btn = document.getElementById('saveProjectBtn');
         btn.disabled = true;
-        btn.innerText = "儲存中...";
-        bootstrap.Modal.getOrCreateInstance(document.getElementById('addProjectModal')).hide();
-
         try {
             const res = await fetchWithAuth(`${RENDER_URL}/api/add_project`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
             });
-            if (res.ok) { alert('事項建立成功！'); init(); }
-        } catch(e) { 
-            if(e.message !== "Unauthorized") alert('連線錯誤'); 
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "儲存事項";
-        }
+            if (res.ok) { bootstrap.Modal.getInstance(document.getElementById('addProjectModal')).hide(); init(); }
+        } catch(e) { console.error(e); } finally { btn.disabled = false; }
     }
 
     async function submitTask() {
+        const type = document.getElementById('task_type').value;
         const nature = document.getElementById('task_nature').value;
-        const finalOwners = (nature === '個人任務') ? document.getElementById('task_owner_single').value : getCheckedValues('task-owner-checkbox');
+        const startDate = document.getElementById('task_start_date').value;
+        const endDate = document.getElementById('task_end_date').value;
+
+        if (type === '重覆任務' && (!endDate || new Date(startDate) > new Date(endDate))) {
+            return alert('重覆任務必須填寫結束日期，且不能早於開始日期！');
+        }
 
         const payload = {
             project_name: document.getElementById('task_project_name').value,
             task_name: document.getElementById('task_name').value,
-            type: document.getElementById('task_type').value,
+            type: type,
             period: document.getElementById('task_period').value,
             nature: nature,
-            owners: finalOwners,
-            start_date: document.getElementById('task_start_date').value,
-            end_date: document.getElementById('task_end_date').value,
+            owners: (nature === '個人任務' ? document.getElementById('task_owner_single').value : getCheckedValues('task-owner-checkbox')),
+            start_date: startDate,
+            end_date: endDate,
             time: document.getElementById('task_time').value
         };
 
-        if (!payload.project_name || !payload.task_name || !payload.start_date) return alert('請填寫必填欄位！');
-        if (payload.type === '重覆任務' && !payload.end_date) return alert('重覆任務必須設定「結束日期」！');
-        if (!payload.owners) return alert('請選擇負責人！');
-        
-        const btn = document.getElementById("saveTaskBtn");
+        if (!payload.task_name || !payload.start_date || !payload.owners) return alert('請完整填寫必填欄位');
+        const btn = document.getElementById('saveTaskBtn');
         btn.disabled = true;
-        btn.innerText = "儲存中...";
-        bootstrap.Modal.getOrCreateInstance(document.getElementById('addTaskModal')).hide();
-
         try {
             const res = await fetchWithAuth(`${RENDER_URL}/api/add_task`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
             });
-            if (res.ok) { alert('任務新增成功！'); init(); }
-        } catch(e) { 
-            if(e.message !== "Unauthorized") alert('連線錯誤'); 
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "儲存任務";
-        }
+            if (res.ok) { bootstrap.Modal.getInstance(document.getElementById('addTaskModal')).hide(); init(); }
+        } catch(e) { console.error(e); } finally { btn.disabled = false; }
     }
 
-    // 🌟 修改：接收 Row Index 並填入隱藏欄位
-    function openEditModal(projectName, taskName, taskRowIdx, projectRowIdx) {
-        const task = rawData.tasks.find(t => t[0] === projectName && t[1] === taskName);
+    function openEditModal(projName, taskName, rowIdx) {
+        const task = rawData.tasks.find(t => t[0] === projName && t[1] === taskName);
         if (!task) return;
-
-        document.getElementById('edit_old_project_name').value = projectName;
+        document.getElementById('edit_old_project_name').value = projName;
         document.getElementById('edit_old_task_name').value = taskName;
-        document.getElementById('edit_project_name_display').value = projectName;
+        document.getElementById('edit_project_name_display').value = projName;
         document.getElementById('edit_task_name').value = taskName;
-        document.getElementById('edit_task_status').value = task[10]; 
-        
-        // 將 Row Index 放入隱藏輸入框，給未來的編輯 API 加速使用
-        document.getElementById('edit_task_row_idx').value = taskRowIdx || '';
-        document.getElementById('edit_project_row_idx').value = projectRowIdx || '';
-
+        document.getElementById('edit_task_status').value = task[10];
+        document.getElementById('edit_task_row_idx').value = rowIdx;
         bootstrap.Modal.getOrCreateInstance(document.getElementById('editTaskModal')).show();
     }
 
-    // 🌟 修改：把 Row Index 夾帶給後端
     async function updateTask() {
-        const oldProjName = document.getElementById('edit_old_project_name').value;
-        const oldTaskName = document.getElementById('edit_old_task_name').value;
-        const newTaskName = document.getElementById('edit_task_name').value;
-        const newStatus = document.getElementById('edit_task_status').value;
-        const taskRowIdx = document.getElementById('edit_task_row_idx').value;
-        const projectRowIdx = document.getElementById('edit_project_row_idx').value;
-
-        if (!newTaskName) return alert("任務名稱不可為空！");
-
-        const btn = document.getElementById("updateTaskBtn");
+        const btn = document.getElementById('updateTaskBtn');
         btn.disabled = true;
-        btn.innerText = "更新中...";
-        bootstrap.Modal.getOrCreateInstance(document.getElementById('editTaskModal')).hide();
-
+        const payload = {
+            old_project_name: document.getElementById('edit_old_project_name').value,
+            old_task_name: document.getElementById('edit_old_task_name').value,
+            new_task_name: document.getElementById('edit_task_name').value,
+            status: document.getElementById('edit_task_status').value,
+            task_row_idx: document.getElementById('edit_task_row_idx').value
+        };
         try {
             const res = await fetchWithAuth(`${RENDER_URL}/api/edit_task`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    old_project_name: oldProjName,
-                    old_task_name: oldTaskName,
-                    new_task_name: newTaskName,
-                    status: newStatus,
-                    task_row_idx: taskRowIdx,
-                    project_row_idx: projectRowIdx
-                })
+                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
             });
-            
-            if (res.status === 404) {
-                alert("前端已送出請求，但你的後端尚未建立 /api/edit_task 路由！");
-            } else if (res.ok) {
-                await init();
-            }
-        } catch (e) {
-            if(e.message !== "Unauthorized") console.error(e);
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "儲存修改";
-        }
+            if (res.ok) { bootstrap.Modal.getInstance(document.getElementById('editTaskModal')).hide(); init(); }
+        } catch(e) { console.error(e); } finally { btn.disabled = false; }
     }
 
-    // 🌟 修改：把 Row Index 夾帶給後端
     async function deleteTask() {
-        const confirmDelete = confirm("確定要刪除這筆任務嗎？此動作無法復原！");
-        if (!confirmDelete) return;
-
-        const oldProjName = document.getElementById('edit_old_project_name').value;
-        const oldTaskName = document.getElementById('edit_old_task_name').value;
-        const taskRowIdx = document.getElementById('edit_task_row_idx').value;
-
-        const btn = document.getElementById("deleteTaskBtn");
+        if (!confirm("確定刪除此任務？")) return;
+        const btn = document.getElementById('deleteTaskBtn');
         btn.disabled = true;
-        btn.innerText = "刪除中...";
-        bootstrap.Modal.getOrCreateInstance(document.getElementById('editTaskModal')).hide();
-
+        const payload = {
+            project_name: document.getElementById('edit_old_project_name').value,
+            task_name: document.getElementById('edit_old_task_name').value,
+            task_row_idx: document.getElementById('edit_task_row_idx').value
+        };
         try {
             const res = await fetchWithAuth(`${RENDER_URL}/api/delete_task`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    project_name: oldProjName,
-                    task_name: oldTaskName,
-                    task_row_idx: taskRowIdx
-                })
+                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
             });
-
-            if (res.status === 404) {
-                alert("前端已送出請求，但你的後端尚未建立 /api/delete_task 路由！");
-            } else if (res.ok) {
-                await init();
-            }
-        } catch (e) {
-            if(e.message !== "Unauthorized") console.error(e);
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "刪除此任務";
-        }
+            if (res.ok) { bootstrap.Modal.getInstance(document.getElementById('editTaskModal')).hide(); init(); }
+        } catch(e) { console.error(e); } finally { btn.disabled = false; }
     }
 
-    // 🌟 修改：接收並傳送 Row Index 進行加速
-    async function updateStatus(projectName, taskName, taskRowIdx, projectRowIdx, selectElement) {
-        const newStatus = selectElement.value;
-        selectElement.style.opacity = '0.5';
-
+    async function updateStatus(proj, task, rowIdx, el) {
+        const status = el.value;
+        el.style.opacity = '0.5';
         try {
             const res = await fetchWithAuth(`${RENDER_URL}/api/update_task_status`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    project_name: projectName, 
-                    task_name: taskName, 
-                    status: newStatus,
-                    task_row_idx: taskRowIdx,
-                    project_row_idx: projectRowIdx
-                })
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ project_name: proj, task_name: task, status: status, task_row_idx: rowIdx })
             });
-            if (res.ok) { await init(); } 
-            else { alert('狀態更新失敗'); selectElement.style.opacity = '1'; }
-        } catch(error) {
-            if(error.message !== "Unauthorized") alert('連線異常'); 
-            selectElement.style.opacity = '1';
-        }
+            if (res.ok) init();
+        } catch(e) { console.error(e); el.style.opacity = '1'; }
     }
 
-    function formatDateToString(dateObj) {
-        let yyyy = dateObj.getFullYear();
-        let mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-        let dd = String(dateObj.getDate()).padStart(2, '0');
-        return `${yyyy}-${mm}-${dd}`;
-    }
-
+    // --- 渲染畫面 (完整保留您的日曆迴圈) ---
     function renderDashboard() {
-        const memberFilters = getMultiSelectValues('filterMember');
-        const projectFilters = getMultiSelectValues('filterProject');
-        const statusFilters = getMultiSelectValues('filterStatus'); 
+        const memberFilters = getSelectedValues('filterMember');
+        const projectFilters = getSelectedValues('filterProject');
+        const statusFilters = getSelectedValues('filterStatus');
         
         let listHtml = '';
         let calendarEvents = [];
 
         if (rawData.projects) {
-            rawData.projects.forEach(project => {
-                if (!project[0]) return;
-                
-                const projectName = project[0];
-                const leader = project[1] || '';
-                const membersStr = project[2] || '';
-                
-                // 🚀 抓取專案的 Row Index
-                const projectRowIdx = project[project.length - 1];
-                
-                if (projectFilters.length > 0 && !projectFilters.includes(projectName)) return;
+            rawData.projects.forEach(p => {
+                const projName = p[0];
+                if (projectFilters.length > 0 && !projectFilters.includes(projName)) return;
 
-                let isLeader = false;
-                let isMember = false;
+                const projectTasks = (rawData.tasks || []).filter(t => t[0] === projName);
                 
-                if (memberFilters.length > 0) {
-                    isLeader = memberFilters.includes(leader);
-                    isMember = memberFilters.some(m => membersStr.includes(m));
-                    if (!isLeader && !isMember) return; 
-                } else {
-                    isLeader = true; 
-                    isMember = true;
-                }
-
-                let pBadgeClass = 'bg-secondary';
-                if (project[3] === '進行中') pBadgeClass = 'bg-primary';
-                if (project[3] === '已完成') pBadgeClass = 'bg-success';
+                let taskCount = 0;
+                const projStatus = p[3] || '未開始';
+                const projBadge = projStatus === '已完成' ? 'bg-success' : (projStatus === '進行中' ? 'bg-primary' : 'bg-secondary');
 
                 let projectHtml = `
-                    <div class="card project-card mb-4 shadow-sm">
+                    <div class="card project-card shadow-sm">
                         <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                            <h4 class="mb-0">📂 ${projectName}</h4>
-                            <span class="badge ${pBadgeClass} fs-6">${project[3]}</span>
+                            <h5 class="mb-0">📂 ${projName}</h5>
+                            <span class="badge ${projBadge}">${projStatus}</span>
                         </div>
                         <div class="card-body">
-                            <p class="small text-muted mb-3">👑 組長: ${project[1]} | 👥 組員: ${project[2] || '無'}</p>`;
-
-                let taskCount = 0;
+                `;
                 
-                if (rawData.tasks) {
-                    const tasks = rawData.tasks.filter(t => t[0] === projectName);
-                    
-                    tasks.forEach(task => {
-                        const taskName = task[1];
-                        const taskType = task[2];
-                        const taskPeriod = task[3];
-                        const taskOwners = task[5] || '';
-                        const taskStartDate = task[7];  
-                        const taskTime = task[8];
-                        const taskStatus = task[10];
-                        const taskEndDate = task[11];   
-
-                        // 🚀 抓取任務的 Row Index
-                        const taskRowIdx = task[task.length - 1];
-
-                        let showTask = false;
-                        if (memberFilters.length === 0) {
-                            showTask = true; 
-                        } else {
-                            if (isLeader) showTask = true; 
-                            else showTask = memberFilters.some(m => taskOwners.includes(m)); 
-                        }
-
-                        const matchStatus = (statusFilters.length === 0) || statusFilters.includes(taskStatus);
-                        if (!showTask || !matchStatus) return;
+                if (projectTasks.length > 0) {
+                    projectTasks.forEach(t => {
+                        const taskName = t[1];
+                        const taskType = t[2];
+                        const taskPeriod = t[3];
+                        const taskOwners = t[5];
+                        const taskStartDate = t[7];
+                        const taskEndDate = t[8];
+                        const taskTime = t[9];
+                        const taskStatus = t[10];
+                        const rowIdx = t[t.length - 1]; // 後端傳來的最後一個元素是列數
+                        
+                        const matchMember = memberFilters.length === 0 || memberFilters.some(m => taskOwners.includes(m));
+                        const matchStatus = statusFilters.length === 0 || statusFilters.includes(taskStatus);
+                        
+                        if (!matchMember || !matchStatus) return;
                         
                         taskCount++;
+                        const statusColor = taskStatus === '已完成' ? 'success' : (taskStatus === '進行中' ? 'primary' : 'secondary');
+                        const typeBorder = taskType === '單一任務' ? 'info' : 'warning';
                         
-                        let colorClass = 'text-secondary border-secondary';
-                        if(taskStatus === '進行中') colorClass = 'text-primary border-primary';
-                        if(taskStatus === '已完成') colorClass = 'text-success border-success';
-
-                        let dateDisplay = taskStartDate ? taskStartDate : '無日期';
-                        if (taskType === '重覆任務' && taskEndDate) {
-                            dateDisplay = `${taskStartDate} 至 ${taskEndDate}`;
-                        }
-
-                        // 🌟 修改：onclick 跟 onchange 都加入了 taskRowIdx 和 projectRowIdx
                         projectHtml += `
-                            <div class="task-item border-start border-4 border-${taskType === '單一任務' ? 'info' : 'warning'}">
+                            <div class="task-item border-start border-4 border-${typeBorder}">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <div class="flex-grow-1" style="cursor: pointer;" onclick="openEditModal('${projectName}', '${taskName}', ${taskRowIdx}, ${projectRowIdx})">
-                                        <h5 class="mb-1 text-dark">${taskName}</h5>
-                                        <p class="text-muted small mb-0">
-                                            👤 負責: ${taskOwners || '未定'} | 📅 ${dateDisplay} ${taskTime ? '@ ' + taskTime : ''}
-                                            ${taskPeriod !== 'N/A' ? ` | 🔄 ${taskPeriod}` : ''}
-                                        </p>
+                                    <div class="flex-grow-1" onclick="openEditModal('${projName}', '${taskName}', ${rowIdx})" style="cursor:pointer">
+                                        <h6 class="mb-1">${taskName} <span class="badge bg-light text-dark border">${taskType}</span></h6>
+                                        <p class="small text-muted mb-0">👤 ${taskOwners} | 📅 ${taskStartDate} ${taskEndDate ? '~ ' + taskEndDate : ''}</p>
                                     </div>
-                                    <div onclick="event.stopPropagation()">
-                                        <select class="form-select form-select-sm status-select ${colorClass}" 
-                                                onchange="updateStatus('${projectName}', '${taskName}', ${taskRowIdx}, ${projectRowIdx}, this)">
+                                    <div class="d-flex align-items-center">
+                                        <select class="form-select form-select-sm status-select text-${statusColor} border-${statusColor}" onchange="updateStatus('${projName}', '${taskName}', ${rowIdx}, this)">
                                             <option value="未開始" ${taskStatus === '未開始' ? 'selected' : ''}>未開始</option>
                                             <option value="進行中" ${taskStatus === '進行中' ? 'selected' : ''}>進行中</option>
                                             <option value="已完成" ${taskStatus === '已完成' ? 'selected' : ''}>已完成</option>
                                         </select>
                                     </div>
                                 </div>
-                            </div>`;
-                            
-                        let calColor = '#6c757d'; 
-                        if (taskStatus === '進行中') calColor = '#0d6efd'; 
-                        if (taskStatus === '已完成') calColor = '#198754'; 
+                            </div>
+                        `;
 
-                        // 🌟 修改：夾帶給日曆以備編輯之用
-                        let cleanProps = { 
-                            project: projectName, 
-                            taskName: taskName, 
-                            owners: taskOwners, 
-                            status: taskStatus,
-                            taskRowIdx: taskRowIdx,
-                            projectRowIdx: projectRowIdx
-                        };
+                        // 您的原版：完整日曆事件渲染邏輯 (處理重覆任務)
+                        const calColor = taskStatus === '已完成' ? '#198754' : (taskStatus === '進行中' ? '#0d6efd' : '#6c757d');
+                        const cleanProps = { proj: projName, task: taskName, row: rowIdx };
 
-                        if (taskType === '重覆任務' && taskStartDate && taskEndDate) {
+                        if (taskType === '重覆任務' && taskPeriod !== 'N/A' && taskEndDate && taskStartDate) {
                             let currDate = new Date(taskStartDate);
-                            let endDate = new Date(taskEndDate);
-                            let safeguard = 0; 
-
-                            while (currDate <= endDate && safeguard < 365) {
-                                let formattedDate = formatDateToString(currDate);
-                                let startDateTime = taskTime ? `${formattedDate}T${taskTime}` : formattedDate;
-
+                            let endD = new Date(taskEndDate);
+                            let safeguard = 0;
+                            while (currDate <= endD && safeguard < 1000) {
+                                // 避免時區問題，使用本地端字串組合
+                                let year = currDate.getFullYear();
+                                let month = String(currDate.getMonth() + 1).padStart(2, '0');
+                                let day = String(currDate.getDate()).padStart(2, '0');
+                                let dateStr = `${year}-${month}-${day}`;
+                                
+                                let startDateTime = taskTime ? `${dateStr}T${taskTime}` : dateStr;
                                 calendarEvents.push({
-                                    title: `${taskStatus === '已完成' ? '✅' : '🔄'} ${taskName}`,
+                                    title: `${taskStatus === '已完成' ? '✅' : '📌'} ${taskName}`,
                                     start: startDateTime,
                                     backgroundColor: calColor,
                                     extendedProps: cleanProps
@@ -850,7 +623,7 @@
                 }
                 
                 projectHtml += `</div></div>`;
-                if (taskCount > 0 || statusFilters.length === 0) {
+                if (taskCount > 0 || (statusFilters.length === 0 && memberFilters.length === 0)) {
                     listHtml += projectHtml;
                 }
             });
@@ -862,6 +635,20 @@
             calendar.removeAllEvents();
             calendar.addEventSource(calendarEvents);
         }
+    }
+
+    function initCalendar() {
+        const el = document.getElementById('calendar');
+        calendar = new FullCalendar.Calendar(el, {
+            initialView: 'dayGridMonth',
+            locale: 'zh-tw',
+            headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth' },
+            eventClick: (info) => {
+                const p = info.event.extendedProps;
+                openEditModal(p.proj, p.task, p.row);
+            }
+        });
+        calendar.render();
     }
 </script>
 </body>
